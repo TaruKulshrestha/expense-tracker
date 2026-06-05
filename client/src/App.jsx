@@ -1,15 +1,18 @@
 import { useState, useMemo } from 'react';
 import { useExpenses } from './hooks/useExpenses';
+import { useBudgets } from './hooks/useBudgets';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import SummaryPanel from './components/SummaryPanel';
 import Filters from './components/Filters';
 import ExportButton from './components/ExportButton';
+import BudgetSettings from './components/BudgetSettings';
 import { formatCurrency } from './utils/formatters';
 import styles from './App.module.css';
 
 export default function App() {
   const [filters, setFilters] = useState({ preset: 'all', category: '', startDate: '', endDate: '' });
+  const [showBudgets, setShowBudgets] = useState(false);
 
   const apiFilters = useMemo(() => ({
     category: filters.category || undefined,
@@ -17,30 +20,15 @@ export default function App() {
     endDate: filters.endDate || undefined,
   }), [filters.category, filters.startDate, filters.endDate]);
 
-  const { expenses, loading, error, addExpense, editExpense, removeExpense } = useExpenses(apiFilters);
+  const { expenses, summary, loading, error, addExpense, editExpense, removeExpense } = useExpenses(apiFilters);
+  const { budgets, saveBudgets } = useBudgets();
 
-  const stats = useMemo(() => {
+  const filteredStats = useMemo(() => {
     const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const byCategory = {};
-    let highest = null;
-
-    for (const e of expenses) {
-      byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
-      if (!highest || e.amount > highest.amount) highest = e;
-    }
-
-    let topCategory = null;
-    let topAmount = 0;
-    for (const [cat, amt] of Object.entries(byCategory)) {
-      if (amt > topAmount) {
-        topAmount = amt;
-        topCategory = cat;
-      }
-    }
-
-    const avg = expenses.length > 0 ? total / expenses.length : 0;
-    return { total, byCategory, topCategory, topAmount, highest, avg, count: expenses.length };
+    return { total, count: expenses.length };
   }, [expenses]);
+
+  const hasActiveFilters = filters.preset !== 'all' || !!filters.category;
 
   async function handleAdd(data) {
     await addExpense(data);
@@ -56,33 +44,49 @@ export default function App() {
             <p className={styles.subtitle}>Your personal spending ledger</p>
           </div>
         </div>
-        <ExportButton expenses={expenses} />
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.budgetsBtn}
+            onClick={() => setShowBudgets(true)}
+          >
+            Budgets
+          </button>
+          <ExportButton expenses={expenses} />
+        </div>
       </header>
 
-      {!loading && (
+      {!loading && summary && (
         <section className={styles.hero} aria-label="Spending overview">
           <div className={styles.heroMain}>
-            <span className={styles.heroLabel}>Filtered total</span>
-            <span className={styles.heroAmount}>{formatCurrency(stats.total)}</span>
+            <span className={styles.heroLabel}>This month</span>
+            <span className={styles.heroAmount}>{formatCurrency(summary.totalThisMonth)}</span>
+          </div>
+          {hasActiveFilters && (
+            <>
+              <div className={styles.heroDivider} aria-hidden="true" />
+              <div className={styles.heroMetric}>
+                <span className={styles.heroMetricLabel}>Filtered total</span>
+                <span className={styles.heroMetricValue}>{formatCurrency(filteredStats.total)}</span>
+              </div>
+            </>
+          )}
+          <div className={styles.heroDivider} aria-hidden="true" />
+          <div className={styles.heroMetric}>
+            <span className={styles.heroMetricLabel}>Showing</span>
+            <span className={styles.heroMetricValue}>{filteredStats.count}</span>
+            <span className={styles.heroMetricSub}>transactions</span>
           </div>
           <div className={styles.heroDivider} aria-hidden="true" />
           <div className={styles.heroMetric}>
-            <span className={styles.heroMetricLabel}>Transactions</span>
-            <span className={styles.heroMetricValue}>{stats.count}</span>
-          </div>
-          <div className={styles.heroDivider} aria-hidden="true" />
-          <div className={styles.heroMetric}>
-            <span className={styles.heroMetricLabel}>Daily avg</span>
-            <span className={styles.heroMetricValue}>{formatCurrency(stats.avg)}</span>
-          </div>
-          <div className={styles.heroDivider} aria-hidden="true" />
-          <div className={styles.heroMetric}>
-            <span className={styles.heroMetricLabel}>Peak spend</span>
+            <span className={styles.heroMetricLabel}>Highest ever</span>
             <span className={styles.heroMetricValue}>
-              {stats.highest ? formatCurrency(stats.highest.amount) : '—'}
+              {summary.highestExpense
+                ? formatCurrency(summary.highestExpense.amount)
+                : '—'}
             </span>
-            {stats.highest && (
-              <span className={styles.heroMetricSub}>{stats.highest.category}</span>
+            {summary.highestExpense && (
+              <span className={styles.heroMetricSub}>{summary.highestExpense.category}</span>
             )}
           </div>
         </section>
@@ -106,10 +110,8 @@ export default function App() {
           </div>
 
           <SummaryPanel
-            total={stats.total}
-            byCategory={stats.byCategory}
-            topCategory={stats.topCategory}
-            topAmount={stats.topAmount}
+            summary={summary}
+            budgets={budgets}
             loading={loading}
           />
         </div>
@@ -118,6 +120,14 @@ export default function App() {
           <ExpenseForm onSubmit={handleAdd} />
         </aside>
       </main>
+
+      {showBudgets && (
+        <BudgetSettings
+          budgets={budgets}
+          onSave={saveBudgets}
+          onClose={() => setShowBudgets(false)}
+        />
+      )}
     </div>
   );
 }

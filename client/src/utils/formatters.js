@@ -1,11 +1,11 @@
 export const CATEGORIES = ['Food', 'Transport', 'Bills', 'Entertainment', 'Other'];
 
 export const CATEGORY_COLORS = {
-  Food: '#b8e635',
-  Transport: '#3ee8c5',
-  Bills: '#ff6b6b',
-  Entertainment: '#c77dff',
-  Other: '#ffb547',
+  Food: '#34d399',
+  Transport: '#38bdf8',
+  Bills: '#f472b6',
+  Entertainment: '#fb923c',
+  Other: '#a78bfa',
 };
 
 export const CATEGORY_ICONS = {

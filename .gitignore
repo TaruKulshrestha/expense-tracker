@@ -2,5 +2,6 @@ node_modules/
 dist/
 .env
 data.json
+budgets.json
 *.log
 .DS_Store
