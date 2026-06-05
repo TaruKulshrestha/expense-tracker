@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { CATEGORIES, todayString } from '../utils/formatters';
+import { CATEGORIES, CATEGORY_COLORS, todayString } from '../utils/formatters';
 import { validateExpense } from '../utils/validateExpense';
 import styles from './ExpenseForm.module.css';
+
+const NOTE_MAX = 200;
 
 const EMPTY_FORM = {
   amount: '',
@@ -33,7 +35,14 @@ export default function ExpenseForm({ onSubmit, onCancel, initial = null }) {
   }, [initial?.id]);
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    if (name === 'note' && value.length > NOTE_MAX) return;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors([]);
+  }
+
+  function handleCategory(cat) {
+    setForm((prev) => ({ ...prev, category: cat }));
     setErrors([]);
   }
 
@@ -65,8 +74,11 @@ export default function ExpenseForm({ onSubmit, onCancel, initial = null }) {
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit} noValidate>
-      <h2 className={styles.heading}>{initial ? 'Edit Expense' : 'New Expense'}</h2>
+    <form className={styles.card} onSubmit={handleSubmit} noValidate>
+      <div className={styles.cardHead}>
+        <h2 className={styles.heading}>{initial ? 'Edit entry' : 'Log expense'}</h2>
+        <p className={styles.hint}>Record a new transaction</p>
+      </div>
 
       {errors.length > 0 && (
         <ul className={styles.errors} role="alert">
@@ -76,32 +88,23 @@ export default function ExpenseForm({ onSubmit, onCancel, initial = null }) {
 
       <div className={styles.row}>
         <div className={styles.field}>
-          <label htmlFor="amount">Amount (₹)</label>
-          <input
-            id="amount"
-            name="amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="0.00"
-            value={form.amount}
-            onChange={handleChange}
-            required
-          />
+          <label htmlFor="amount">Amount</label>
+          <div className={styles.amountWrap}>
+            <span className={styles.prefix}>₹</span>
+            <input
+              id="amount"
+              name="amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="0.00"
+              value={form.amount}
+              onChange={handleChange}
+              className={styles.amountInput}
+              required
+            />
+          </div>
         </div>
-
-        <div className={styles.field}>
-          <label htmlFor="category">Category</label>
-          <select id="category" name="category" value={form.category} onChange={handleChange} required>
-            <option value="">Select...</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className={styles.row}>
         <div className={styles.field}>
           <label htmlFor="date">Date</label>
           <input
@@ -114,18 +117,46 @@ export default function ExpenseForm({ onSubmit, onCancel, initial = null }) {
             required
           />
         </div>
+      </div>
 
-        <div className={styles.field}>
-          <label htmlFor="note">Note (optional)</label>
-          <input
-            id="note"
-            name="note"
-            type="text"
-            placeholder="e.g. Lunch with client"
-            value={form.note}
-            onChange={handleChange}
-          />
+      <div className={styles.field}>
+        <span className={styles.catLabel}>Category</span>
+        <div className={styles.catGrid} role="group" aria-label="Category">
+          {CATEGORIES.map((cat) => {
+            const color = CATEGORY_COLORS[cat];
+            const active = form.category === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                className={`${styles.catBtn} ${active ? styles.catBtnActive : ''}`}
+                style={active ? {
+                  borderColor: color,
+                  color,
+                  background: `${color}18`,
+                } : undefined}
+                onClick={() => handleCategory(cat)}
+                aria-pressed={active}
+              >
+                <span className={styles.catDot} style={{ background: color }} />
+                {cat}
+              </button>
+            );
+          })}
         </div>
+      </div>
+
+      <div className={styles.field}>
+        <label htmlFor="note">Memo</label>
+        <input
+          id="note"
+          name="note"
+          type="text"
+          placeholder="What was this for?"
+          value={form.note}
+          onChange={handleChange}
+          maxLength={NOTE_MAX}
+        />
       </div>
 
       <div className={styles.actions}>
@@ -135,7 +166,7 @@ export default function ExpenseForm({ onSubmit, onCancel, initial = null }) {
           </button>
         )}
         <button type="submit" className={styles.submitBtn} disabled={submitting}>
-          {submitting ? 'Saving…' : initial ? 'Save Changes' : 'Add Expense'}
+          {submitting ? 'Saving…' : initial ? 'Update' : 'Record expense'}
         </button>
       </div>
     </form>

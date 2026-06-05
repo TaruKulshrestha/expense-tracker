@@ -1,17 +1,27 @@
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  color: var(--text-dim);
   font-size: 0.78rem;
-  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
   border-radius: var(--radius);
-  letter-spacing: 0.04em;
-  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btn::before {
+  content: '↗';
+  font-size: 0.85rem;
+  opacity: 0.6;
 }
 
 .btn:hover:not(:disabled) {
-  color: var(--accent);
+  color: var(--accent-bright);
   border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .btn:disabled {

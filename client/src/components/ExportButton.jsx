@@ -31,7 +31,7 @@ export default function ExportButton({ expenses }) {
       disabled={expenses.length === 0}
       title="Export visible expenses as CSV"
     >
-      ↓ Export CSV
+      Export CSV
     </button>
   );
 }

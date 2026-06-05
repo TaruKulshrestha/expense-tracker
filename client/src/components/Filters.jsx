@@ -1,10 +1,12 @@
-import { CATEGORIES, getMonthRange, getLastMonthRange, todayString } from '../utils/formatters';
+import { CATEGORIES, getMonthRange, getLastMonthRange, getLastNDaysRange, todayString } from '../utils/formatters';
 import styles from './Filters.module.css';
 
 const PRESETS = [
-  { label: 'All Time', value: 'all' },
-  { label: 'This Month', value: 'this_month' },
-  { label: 'Last Month', value: 'last_month' },
+  { label: 'All', value: 'all' },
+  { label: 'Month', value: 'this_month' },
+  { label: 'Last mo.', value: 'last_month' },
+  { label: '7d', value: 'last_7' },
+  { label: '30d', value: 'last_30' },
   { label: 'Custom', value: 'custom' },
 ];
 
@@ -18,6 +20,12 @@ export default function Filters({ filters, onChange }) {
     } else if (value === 'last_month') {
       const { startDate: s, endDate: e } = getLastMonthRange();
       onChange({ ...filters, preset: value, startDate: s, endDate: e });
+    } else if (value === 'last_7') {
+      const { startDate: s, endDate: e } = getLastNDaysRange(7);
+      onChange({ ...filters, preset: value, startDate: s, endDate: e });
+    } else if (value === 'last_30') {
+      const { startDate: s, endDate: e } = getLastNDaysRange(30);
+      onChange({ ...filters, preset: value, startDate: s, endDate: e });
     } else if (value === 'all') {
       onChange({ ...filters, preset: value, startDate: '', endDate: '' });
     } else {
@@ -25,21 +33,16 @@ export default function Filters({ filters, onChange }) {
     }
   }
 
-  function handleCategory(e) {
-    onChange({ ...filters, category: e.target.value });
-  }
-
-  function handleDateChange(field) {
-    return (e) => onChange({ ...filters, [field]: e.target.value, preset: 'custom' });
-  }
-
   return (
     <div className={styles.bar}>
-      <div className={styles.presets}>
+      <div className={styles.tabs} role="tablist" aria-label="Date range">
         {PRESETS.map((p) => (
           <button
             key={p.value}
-            className={`${styles.preset} ${preset === p.value ? styles.active : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={preset === p.value}
+            className={`${styles.tab} ${preset === p.value ? styles.tabActive : ''}`}
             onClick={() => handlePreset(p.value)}
           >
             {p.label}
@@ -47,33 +50,36 @@ export default function Filters({ filters, onChange }) {
         ))}
       </div>
 
-      <div className={styles.controls}>
-        <select className={styles.select} value={category} onChange={handleCategory}>
-          <option value="">All Categories</option>
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+      <select
+        className={styles.categorySelect}
+        value={category}
+        onChange={(e) => onChange({ ...filters, category: e.target.value })}
+        aria-label="Filter by category"
+      >
+        <option value="">Every category</option>
+        {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+      </select>
 
-        {preset === 'custom' && (
-          <>
-            <input
-              type="date"
-              className={styles.dateInput}
-              value={startDate}
-              max={endDate || todayString()}
-              onChange={handleDateChange('startDate')}
-            />
-            <span className={styles.sep}>→</span>
-            <input
-              type="date"
-              className={styles.dateInput}
-              value={endDate}
-              min={startDate}
-              max={todayString()}
-              onChange={handleDateChange('endDate')}
-            />
-          </>
-        )}
-      </div>
+      {preset === 'custom' && (
+        <div className={styles.customRow}>
+          <input
+            type="date"
+            value={startDate}
+            max={endDate || todayString()}
+            onChange={(e) => onChange({ ...filters, startDate: e.target.value, preset: 'custom' })}
+            aria-label="From"
+          />
+          <span className={styles.sep}>—</span>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            max={todayString()}
+            onChange={(e) => onChange({ ...filters, endDate: e.target.value, preset: 'custom' })}
+            aria-label="To"
+          />
+        </div>
+      )}
     </div>
   );
 }

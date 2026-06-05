@@ -1,4 +1,8 @@
-const BASE = '/api/expenses';
+const API_ORIGIN = import.meta.env.DEV
+  ? ''
+  : 'https://expense-tracker-mp7m.onrender.com';
+
+const BASE = `${API_ORIGIN}/api/expenses`;
 
 async function handleResponse(res) {
   if (res.status === 204) return null;

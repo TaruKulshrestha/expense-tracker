@@ -5,10 +5,10 @@ import ExpenseList from './components/ExpenseList';
 import SummaryPanel from './components/SummaryPanel';
 import Filters from './components/Filters';
 import ExportButton from './components/ExportButton';
+import { formatCurrency } from './utils/formatters';
 import styles from './App.module.css';
 
 export default function App() {
-  const [showForm, setShowForm] = useState(false);
   const [filters, setFilters] = useState({ preset: 'all', category: '', startDate: '', endDate: '' });
 
   const apiFilters = useMemo(() => ({
@@ -17,44 +17,85 @@ export default function App() {
     endDate: filters.endDate || undefined,
   }), [filters.category, filters.startDate, filters.endDate]);
 
-  const { expenses, summary, loading, error, addExpense, editExpense, removeExpense } = useExpenses(apiFilters);
+  const { expenses, loading, error, addExpense, editExpense, removeExpense } = useExpenses(apiFilters);
+
+  const stats = useMemo(() => {
+    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const byCategory = {};
+    let highest = null;
+
+    for (const e of expenses) {
+      byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+      if (!highest || e.amount > highest.amount) highest = e;
+    }
+
+    let topCategory = null;
+    let topAmount = 0;
+    for (const [cat, amt] of Object.entries(byCategory)) {
+      if (amt > topAmount) {
+        topAmount = amt;
+        topCategory = cat;
+      }
+    }
+
+    const avg = expenses.length > 0 ? total / expenses.length : 0;
+    return { total, byCategory, topCategory, topAmount, highest, avg, count: expenses.length };
+  }, [expenses]);
 
   async function handleAdd(data) {
     await addExpense(data);
-    setShowForm(false);
   }
 
   return (
     <div className={styles.app}>
       <header className={styles.header}>
-        <div className={styles.logo}>
-          <span className={styles.logoMark}>₹</span>
+        <div className={styles.brand}>
+          <div className={styles.logoMark} aria-hidden="true">₹</div>
           <div>
-            <h1 className={styles.title}>Expense Tracker</h1>
-            <p className={styles.subtitle}>where does it all go</p>
+            <h1 className={styles.title}>SpendWise</h1>
+            <p className={styles.subtitle}>Your personal spending ledger</p>
           </div>
         </div>
-        <button
-          className={`${styles.addBtn} ${showForm ? styles.addBtnActive : ''}`}
-          onClick={() => setShowForm((v) => !v)}
-          aria-expanded={showForm}
-        >
-          {showForm ? '✕ Cancel' : '+ Add Expense'}
-        </button>
+        <ExportButton expenses={expenses} />
       </header>
 
+      {!loading && (
+        <section className={styles.hero} aria-label="Spending overview">
+          <div className={styles.heroMain}>
+            <span className={styles.heroLabel}>Filtered total</span>
+            <span className={styles.heroAmount}>{formatCurrency(stats.total)}</span>
+          </div>
+          <div className={styles.heroDivider} aria-hidden="true" />
+          <div className={styles.heroMetric}>
+            <span className={styles.heroMetricLabel}>Transactions</span>
+            <span className={styles.heroMetricValue}>{stats.count}</span>
+          </div>
+          <div className={styles.heroDivider} aria-hidden="true" />
+          <div className={styles.heroMetric}>
+            <span className={styles.heroMetricLabel}>Daily avg</span>
+            <span className={styles.heroMetricValue}>{formatCurrency(stats.avg)}</span>
+          </div>
+          <div className={styles.heroDivider} aria-hidden="true" />
+          <div className={styles.heroMetric}>
+            <span className={styles.heroMetricLabel}>Peak spend</span>
+            <span className={styles.heroMetricValue}>
+              {stats.highest ? formatCurrency(stats.highest.amount) : '—'}
+            </span>
+            {stats.highest && (
+              <span className={styles.heroMetricSub}>{stats.highest.category}</span>
+            )}
+          </div>
+        </section>
+      )}
+
       <main className={styles.main}>
-        <div className={styles.left}>
-          {showForm && (
-            <ExpenseForm onSubmit={handleAdd} onCancel={() => setShowForm(false)} />
-          )}
+        <div className={styles.contentCol}>
+          <div className={styles.toolbar}>
+            <h2 className={styles.sectionTitle}>Activity</h2>
+            <Filters filters={filters} onChange={setFilters} />
+          </div>
 
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <Filters filters={filters} onChange={setFilters} />
-              <ExportButton expenses={expenses} />
-            </div>
-
+          <div className={styles.listCard}>
             <ExpenseList
               expenses={expenses}
               loading={loading}
@@ -62,11 +103,19 @@ export default function App() {
               onEdit={editExpense}
               onDelete={removeExpense}
             />
-          </section>
+          </div>
+
+          <SummaryPanel
+            total={stats.total}
+            byCategory={stats.byCategory}
+            topCategory={stats.topCategory}
+            topAmount={stats.topAmount}
+            loading={loading}
+          />
         </div>
 
-        <aside className={styles.aside}>
-          <SummaryPanel summary={summary} />
+        <aside className={styles.formCol}>
+          <ExpenseForm onSubmit={handleAdd} />
         </aside>
       </main>
     </div>

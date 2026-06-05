@@ -1,12 +1,24 @@
 export const CATEGORIES = ['Food', 'Transport', 'Bills', 'Entertainment', 'Other'];
 
 export const CATEGORY_COLORS = {
-  Food: '#c8f04a',
-  Transport: '#4af0c8',
-  Bills: '#f04a4a',
-  Entertainment: '#c84af0',
-  Other: '#f0a04a',
+  Food: '#b8e635',
+  Transport: '#3ee8c5',
+  Bills: '#ff6b6b',
+  Entertainment: '#c77dff',
+  Other: '#ffb547',
 };
+
+export const CATEGORY_ICONS = {
+  Food: 'F',
+  Transport: 'T',
+  Bills: 'B',
+  Entertainment: 'E',
+  Other: 'O',
+};
+
+export function getMonthLabel() {
+  return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+}
 
 export function formatCurrency(amount) {
   return new Intl.NumberFormat('en-IN', {
@@ -43,4 +55,35 @@ export function getLastMonthRange() {
 
 export function todayString() {
   return new Date().toISOString().split('T')[0];
+}
+
+export function getLastNDaysRange(days) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - (days - 1));
+  return {
+    startDate: start.toISOString().split('T')[0],
+    endDate: end.toISOString().split('T')[0],
+  };
+}
+
+export function getTopCategory(totalByCategory) {
+  let top = null;
+  let max = 0;
+  for (const [cat, amount] of Object.entries(totalByCategory)) {
+    if (amount > max) {
+      max = amount;
+      top = cat;
+    }
+  }
+  return top ? { category: top, amount: max } : null;
+}
+
+export function buildCategoryTotals(expenses) {
+  const totals = {};
+  for (const cat of CATEGORIES) totals[cat] = 0;
+  for (const e of expenses) {
+    if (totals[e.category] !== undefined) totals[e.category] += e.amount;
+  }
+  return totals;
 }

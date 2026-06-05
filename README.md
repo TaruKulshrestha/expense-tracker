@@ -35,10 +35,10 @@ Quality over quantity — a small feature set done well, not a long wishlist.
 
 ## Live demo
 
-Not deployed yet — update when live:
+- **API (Render):** https://expense-tracker-mp7m.onrender.com
+- **Health check:** https://expense-tracker-mp7m.onrender.com/api/health
 
-- Frontend: `https://your-app.vercel.app`
-- Backend: `https://your-app.onrender.com`
+Production builds of the client call the Render API automatically. Local dev still uses the Vite proxy (`/api` → `localhost:3001`).
 
 ## Stack
 
@@ -87,7 +87,8 @@ cd server && npm test
 
 ## API
 
-Base URL: `http://localhost:3001/api`
+- **Local:** `http://localhost:3001/api`
+- **Production:** `https://expense-tracker-mp7m.onrender.com/api`
 
 ### `GET /expenses`
 
